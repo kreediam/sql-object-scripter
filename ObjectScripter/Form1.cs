@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -10,8 +9,8 @@ namespace ObjectScripter
 {
     public partial class Form1 : DevExpress.XtraEditors.XtraForm
     {
-        private Profiles profs = new Profiles();
-        private string settingsFile = @"C:\kreed\Documents\KreedApps\Object Scripter.dat";
+        private Profiles profiles = new Profiles();
+        private string settingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"ObjectScripter\Config.xml");
 
         public Form1(string[] args)
         {
@@ -91,10 +90,10 @@ namespace ObjectScripter
                 if (settingsFile == "" || !File.Exists(settingsFile)) return;
                 XmlSerializer mySerializer = new XmlSerializer(typeof(Profiles));
                 FileStream stream = new FileStream(settingsFile, FileMode.Open);
-                profs = mySerializer.Deserialize(stream) as Profiles;
+                profiles = mySerializer.Deserialize(stream) as Profiles;
                 stream.Close();
 
-                foreach (string str in profs.profiles.Keys)
+                foreach (string str in profiles.profiles.Keys)
                 {
                     cbProfiles.Properties.Items.Add(str);
                 }
@@ -122,14 +121,14 @@ namespace ObjectScripter
                 Profile p = null;
                 string profile = cbProfiles.Text;
 
-                if (profs.profiles.ContainsKey(profile))
+                if (profiles.profiles.ContainsKey(profile))
                 {
-                    p = profs.profiles[profile];
+                    p = profiles.profiles[profile];
                 }
                 else
                 {
                     p = new Profile();
-                    profs.profiles.Add(profile, p);
+                    profiles.profiles.Add(profile, p);
                     cbProfiles.Properties.Items.Add(profile);
                 }
 
@@ -140,7 +139,7 @@ namespace ObjectScripter
                 p.Password = txtPass.Text;
                 p.OutputDir = txtOutput.Text;
 
-                mySerializer.Serialize(stream, profs);
+                mySerializer.Serialize(stream, profiles);
                 stream.Close();
             }
             catch
@@ -171,9 +170,9 @@ namespace ObjectScripter
         private void cbProfiles_SelectedIndexChanged(object sender, EventArgs e)
         {
             string profile = cbProfiles.Text;
-            if (profs.profiles.ContainsKey(profile))
+            if (profiles.profiles.ContainsKey(profile))
             {
-                Profile p = profs.profiles[profile];
+                Profile p = profiles.profiles[profile];
                 txtServer.Text = p.Server;
                 txtDb.Text = p.DataBase;
                 txtUser.Text = p.User;
@@ -187,82 +186,6 @@ namespace ObjectScripter
                 txtUser.Text = "";
                 txtPass.Text = "";
                 txtOutput.Text = "";
-            }
-        }
-    }
-
-    [Serializable]
-    public class Profiles
-    {
-        public MyDictionary<string, Profile> profiles;
-
-        public Profiles()
-        {
-            profiles = new MyDictionary<string, Profile>();
-        }
-    }
-
-    [Serializable]
-    public class Profile
-    {
-        public string ProfileName;
-        public string Server;
-        public string DataBase;
-        public string User;
-        public string Password;
-        public string OutputDir;
-    }
-
-    [XmlRoot("dictionary")]
-    public class MyDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IXmlSerializable
-    {
-        public System.Xml.Schema.XmlSchema GetSchema()
-        {
-            return null;
-        }
-
-        public void ReadXml(System.Xml.XmlReader reader)
-        {
-            XmlSerializer keySerializer = new XmlSerializer(typeof(TKey));
-            XmlSerializer valueSerializer = new XmlSerializer(typeof(TValue));
-            bool wasEmpty = reader.IsEmptyElement;
-            reader.Read();
-
-            if (wasEmpty)
-                return;
-
-            while (reader.NodeType != System.Xml.XmlNodeType.EndElement)
-            {
-                reader.ReadStartElement("item");
-                reader.ReadStartElement("key");
-                TKey key = (TKey)keySerializer.Deserialize(reader);
-                reader.ReadEndElement();
-                reader.ReadStartElement("value");
-                TValue value = (TValue)valueSerializer.Deserialize(reader);
-                reader.ReadEndElement();
-                this.Add(key, value);
-                reader.ReadEndElement();
-                reader.MoveToContent();
-            }
-            reader.ReadEndElement();
-        }
-
-        public void WriteXml(System.Xml.XmlWriter writer)
-        {
-            XmlSerializer keySerializer = new XmlSerializer(typeof(TKey));
-            XmlSerializer valueSerializer = new XmlSerializer(typeof(TValue));
-
-            foreach (TKey key in this.Keys)
-            {
-                writer.WriteStartElement("item");
-                writer.WriteStartElement("key");
-                keySerializer.Serialize(writer, key);
-                writer.WriteEndElement();
-                writer.WriteStartElement("value");
-                TValue value = this[key];
-                valueSerializer.Serialize(writer, value);
-                writer.WriteEndElement();
-                writer.WriteEndElement();
             }
         }
     }
