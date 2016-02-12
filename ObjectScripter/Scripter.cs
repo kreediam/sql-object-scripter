@@ -22,11 +22,6 @@ namespace ObjectScripter
         //Server[@Name='ST-DEVSQL\SQL2008R2']/Database[@Name='PriceSentinel']/StoredProcedure[@Name='CalculateSmoothedHistogram' and @Schema='dbo']
         //Server[@Name='ST-DEVSQL\SQL2008R2']/Database[@Name='PriceSentinel']/Table[@Name='tblOscillations' and @Schema='dbo']
 
-        private string CalculateURN()
-        {
-            return string.Empty;
-        }
-
         public void Script(string[] objectNames)
         {
             ScriptingOptions so = new ScriptingOptions();
@@ -55,8 +50,14 @@ namespace ObjectScripter
                     continue;
 
                 IScriptable dbobject = this.GetObject(db, objectName);
+
                 if (dbobject == null)
+                {
                     MessageBox.Show(db.Name + ":" + db.ID + " doesn't contain " + objectName);
+                    continue;
+                }
+
+                sc = dbobject.Script();
 
                 if (this.SeparateOutput)
                     outputFile = Path.Combine(this.OutputPath, objectName + ".sql");
@@ -68,6 +69,8 @@ namespace ObjectScripter
 
         private IScriptable GetObject(Database db, string name)
         {
+            name = name.Trim();
+
             if (db.Tables.Contains(name))
                 return db.Tables[name];
 
